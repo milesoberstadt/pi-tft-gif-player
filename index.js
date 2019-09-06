@@ -28,20 +28,44 @@ const urlParts = process.argv[2].split('/');
 const tweetID = urlParts[urlParts.length-1];
 console.log("Fetching tweet with id", tweetID)
 
-let videoURL = null;
+let mediaType = null;
+
+getVideo();
 
 async function getVideo(){
-    const result = await client.get('statuses/show', { id: tweetID })
-    videoURL = get(result, 'extended_entities.media[0].video_info.variants[0].url');
-    console.log("Video:", videoURL);
-
-    if (!videoURL) {
-        console.error('No video found in tweet, exiting...');
-        return;
+    const result = await client.get('statuses/show', { id: tweetID });
+    mediaType = get(result, 'extended_entities.media[0].type');
+    if (!mediaType){
+        console.log('No media found on this tweet, exiting...');
+        return
     }
 
-    const videoFile = fs.createWriteStream(shortVidPath);
-    https.get(videoURL, (res) => { gotVideo(res, videoFile); });
+    if (['video', 'animated_gif'].includes(mediaType)) {
+        let videoURL = get(result, 'extended_entities.media[0].video_info.variants[0].url');
+        if (!videoURL) {
+            console.error('Twitter specifies a video, but I couldnt find one, exiting...');
+            return;
+        }
+        console.log("Video:", videoURL);
+        
+        const videoFile = fs.createWriteStream(shortVidPath);
+        https.get(videoURL, (res) => { gotVideo(res, videoFile); });
+    }
+    else if (mediaType === 'photo') {
+        console.log(result.extended_entities.media[0])
+        let imageURL = get(result, 'extended_entities.media[0].media_url_https');
+        if (!imageURL){
+            console.error('Twitter specifies a video, but I couldnt find one, exiting...');
+            return;
+        }
+        console.log(`Image: ${imageURL}`);
+
+        const imageFile = fs.createWriteStream(finishedVidPath);
+        https.get(imageURL, (res) => copyToHost());
+    }
+    else {
+        console.log(`Found an unprocessable media type "${mediaType}" in tweet, exiting`);
+    }
 }
 
 async function gotVideo(res, videoFile) {
@@ -64,7 +88,7 @@ async function gotVideo(res, videoFile) {
         console.log('Lengthing loop...')
         fs.unlinkSync(finishedVidPath);
         fs.writeFileSync('videos/concat_list.txt', concatList);
-        let output = await exec(`ffmpeg -f concat -i videos/concat_list.txt -c copy ${finishedVidPath}`);
+        let output = await exec(`ffmpeg -f concat -i videos/concat_list.txt -c copy -f mp4 ${finishedVidPath}`);
         console.log(output);
     }
     copyToHost();
@@ -74,5 +98,3 @@ async function copyToHost(){
     console.log('Copying file to host');
     await exec(`scp ${finishedVidPath} ${gifPlayerSSH}:~/videos`);
 }
-
-getVideo();
