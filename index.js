@@ -9,7 +9,8 @@ const exec = promisify(require ('child_process').exec);
 dotenv.config();
 
 const loopMinLength = 300; // Minimum length of video in seconds
-const shortVidPath = 'videos/current_short.mp4'; // Location to store original video
+const videoProcessingDir = 'videos';
+let srcVideoFilename = 'current_short.mp4'; // Location to store original video
 const finishedVidPath = 'videos/current.mp4'; // Location to store original video
 const gifPlayerSSH = process.env.GIF_PLAYER_SSH_HOST;
 
@@ -25,19 +26,28 @@ if (!process.argv[2]){
     return;
 }
 const urlParts = process.argv[2].split('/');
-const tweetID = urlParts[urlParts.length-1];
-console.log("Fetching tweet with id", tweetID)
+let tweetID = null;
 
-let mediaType = null;
+if (urlParts.includes('twitter.com')){
+    console.log(urlParts)
+    tweetID = urlParts.slice(-1)[0];
+    console.log("Fetching tweet with id", tweetID);
 
-getVideo();
+    getTwitterMediaURL();
+}
+else {
+    console.log('Doing my best to fetch raw media!');
+    srcVideoFilename = urlParts.slice(-1);
+    fetchVideo(process.argv[2], `${videoProcessingDir}/${srcVideoFilename}`, gotVideo);
+}
 
-async function getVideo(){
+async function getTwitterMediaURL(){
+    let mediaType = null;
     const result = await client.get('statuses/show', { id: tweetID });
     mediaType = get(result, 'extended_entities.media[0].type');
     if (!mediaType){
         console.log('No media found on this tweet, exiting...');
-        return
+        return;
     }
 
     if (['video', 'animated_gif'].includes(mediaType)) {
@@ -48,8 +58,7 @@ async function getVideo(){
         }
         console.log("Video:", videoURL);
         
-        const videoFile = fs.createWriteStream(shortVidPath);
-        https.get(videoURL, (res) => { gotVideo(res, videoFile); });
+        fetchVideo(videoURL, `${videoProcessingDir}/${srcVideoFilename}`, gotVideo);
     }
     else if (mediaType === 'photo') {
         console.log(result.extended_entities.media[0])
@@ -59,30 +68,37 @@ async function getVideo(){
             return;
         }
         console.log(`Image: ${imageURL}`);
-
-        const imageFile = fs.createWriteStream(finishedVidPath);
-        https.get(imageURL, (res) => copyToHost());
+        fetchVideo(imageURL, finishedVidPath, copyToHost);
     }
     else {
         console.log(`Found an unprocessable media type "${mediaType}" in tweet, exiting`);
     }
 }
 
-async function gotVideo(res, videoFile) {
-    res.pipe(videoFile);
+function fetchVideo(url, savePath, callback){
+    const file = fs.createWriteStream(savePath);
+    https.get(url, (res) => {
+        res.pipe(file);
+        callback();
+    });
+}
+
+async function gotVideo() {
     // Get the runtime of this video
-    let {stdout} = await exec(`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ${shortVidPath}`);
+    let { stdout } = await exec(`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ${videoProcessingDir}/${srcVideoFilename}`);
     let vidLength = parseFloat(stdout);
+    // In the event of NaN or 0 for some reason, give a default length
+    vidLength = !!vidLength ? vidLength : 5;
     console.log(`Original video length: ${vidLength}`);
 
     // This is a little trick to make the video longer...
     let concatList = '';
     for(let i=0; vidLength*i<loopMinLength; i++){
-        concatList += `file 'current_short.mp4'\n`;
+        concatList += `file '${srcVideoFilename}'\n`;
     }
     if (concatList === ""){
         console.log('Original file is long enough in current form, skipping concat');
-        await fs.promises.copyFile('shortVidPath', finishedVidPath);
+        await fs.promises.copyFile(`${videoProcessingDir}/${srcVideoFilename}`, finishedVidPath);
     }
     else {
         console.log('Lengthing loop...')
