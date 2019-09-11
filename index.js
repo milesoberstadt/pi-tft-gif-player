@@ -10,7 +10,7 @@ dotenv.config();
 
 const loopMinLength = 300; // Minimum length of video in seconds
 const videoProcessingDir = 'videos';
-let srcVideoFilename = 'current_short.mp4'; // Location to store original video
+const srcVideoFilename = 'current_short.mp4'; // Location to store original video
 const finishedVidPath = 'videos/current.mp4'; // Location to store original video
 const gifPlayerSSH = process.env.GIF_PLAYER_SSH_HOST;
 
@@ -37,8 +37,21 @@ if (urlParts.includes('twitter.com')){
 }
 else {
     console.log('Doing my best to fetch raw media!');
-    srcVideoFilename = urlParts.slice(-1);
-    fetchVideo(process.argv[2], `${videoProcessingDir}/${srcVideoFilename}`, gotVideo);
+    const unconvertedFilename = urlParts.slice(-1)[0];
+    filetype = unconvertedFilename.split(".").slice(-1);
+    let downloadLocation = (filetype === 'mp4')
+        ? `${videoProcessingDir}/${srcVideoFilename}`
+        : `${videoProcessingDir}/${unconvertedFilename}`;
+    fetchVideo(process.argv[2], downloadLocation)
+    .then( () => {
+        if (filetype !== 'mp4'){
+            console.log(`Converting ${filetype} file`);
+            convertVideo(downloadLocation, `${videoProcessingDir}/${srcVideoFilename}`)
+            .then(gotVideo);
+        }
+        else
+            gotVideo();
+    });
 }
 
 async function getTwitterMediaURL(){
@@ -75,12 +88,19 @@ async function getTwitterMediaURL(){
     }
 }
 
-function fetchVideo(url, savePath, callback){
-    const file = fs.createWriteStream(savePath);
-    https.get(url, (res) => {
-        res.pipe(file);
-        callback();
+function fetchVideo(url, savePath){
+    return new Promise((resolve, reject) => {
+        const file = fs.createWriteStream(savePath);
+        https.get(url, res => {
+            res.pipe(file);
+            resolve();
+        });
     });
+}
+
+function convertVideo(inFilePath, outFilePath) {
+    fs.unlinkSync(outFilePath);
+    return exec(`ffmpeg -i ${inFilePath} -f mp4 ${outFilePath}`);
 }
 
 async function gotVideo() {
@@ -104,8 +124,7 @@ async function gotVideo() {
         console.log('Lengthing loop...')
         fs.unlinkSync(finishedVidPath);
         fs.writeFileSync('videos/concat_list.txt', concatList);
-        let output = await exec(`ffmpeg -f concat -i videos/concat_list.txt -c copy -f mp4 ${finishedVidPath}`);
-        console.log(output);
+        await exec(`ffmpeg -f concat -i videos/concat_list.txt -c copy -f mp4 ${finishedVidPath}`);
     }
     copyToHost();
 }
