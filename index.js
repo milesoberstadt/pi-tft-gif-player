@@ -29,7 +29,6 @@ const urlParts = process.argv[2].split('/');
 let tweetID = null;
 
 if (urlParts.includes('twitter.com')){
-    console.log(urlParts)
     tweetID = urlParts.slice(-1)[0];
     console.log("Fetching tweet with id", tweetID);
 
@@ -71,7 +70,8 @@ async function getTwitterMediaURL(){
         }
         console.log("Video:", videoURL);
         
-        fetchVideo(videoURL, `${videoProcessingDir}/${srcVideoFilename}`, gotVideo);
+        fetchVideo(videoURL, `${videoProcessingDir}/${srcVideoFilename}`)
+        .then(gotVideo);
     }
     else if (mediaType === 'photo') {
         console.log(result.extended_entities.media[0])
@@ -81,7 +81,8 @@ async function getTwitterMediaURL(){
             return;
         }
         console.log(`Image: ${imageURL}`);
-        fetchVideo(imageURL, finishedVidPath, copyToHost);
+        fetchVideo(imageURL, finishedVidPath)
+        .then(copyToHost);
     }
     else {
         console.log(`Found an unprocessable media type "${mediaType}" in tweet, exiting`);
@@ -100,7 +101,7 @@ function fetchVideo(url, savePath){
 
 function convertVideo(inFilePath, outFilePath) {
     fs.unlinkSync(outFilePath);
-    return exec(`ffmpeg -i ${inFilePath} -f mp4 ${outFilePath}`);
+    return exec(`ffmpeg -i ${inFilePath} -f mp4 -vf scale=320:-1 ${outFilePath}`);
 }
 
 async function gotVideo() {
