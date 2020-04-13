@@ -101,7 +101,9 @@ function fetchVideo(url, savePath){
         const file = fs.createWriteStream(savePath);
         https.get(url, res => {
             res.pipe(file);
-            resolve();
+            file.on('finish', () => {
+                resolve();
+            });
         });
     });
 }
@@ -130,7 +132,8 @@ async function gotVideo() {
     }
     else {
         console.log('Lengthing loop...')
-        fs.unlinkSync(finishedVidPath);
+        if (fs.existsSync(finishedVidPath))
+            fs.unlinkSync(finishedVidPath);
         fs.writeFileSync('videos/concat_list.txt', concatList);
         await exec(`ffmpeg -f concat -i videos/concat_list.txt -c copy -f mp4 ${finishedVidPath}`);
     }
