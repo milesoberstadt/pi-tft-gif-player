@@ -101,7 +101,7 @@ function fetchVideo(url, savePath){
 
 function convertVideo(inFilePath, outFilePath) {
     fs.unlinkSync(outFilePath);
-    return exec(`ffmpeg -i ${inFilePath} -f mp4 -vf scale=320:-1 ${outFilePath}`);
+    return exec(`ffmpeg -i ${inFilePath} -f mp4 ${outFilePath}`);
 }
 
 async function gotVideo() {
