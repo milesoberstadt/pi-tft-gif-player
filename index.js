@@ -28,6 +28,13 @@ if (!process.argv[2]){
 const urlParts = process.argv[2].split('/');
 let tweetID = null;
 
+try {
+    fs.mkdirSync(videoProcessingDir);
+}
+catch(e) {
+    // we don't care if the dir already exists
+}
+
 if (urlParts.includes('twitter.com')){
     tweetID = urlParts.slice(-1)[0];
     console.log("Fetching tweet with id", tweetID);
