@@ -23,6 +23,19 @@ CONSUMER_SECRET=YOUR_TWITTER_CONSUMER_SECRET
 ACCESS_TOKEN_KEY=YOUR_TWITTER_ACCESS_TOKEN_KEY
 ACCESS_TOKEN_SECRET=YOUR_TWITTER_ACCESS_TOKEN_SECRET
 GIF_PLAYER_SSH_HOST="USER@HOSTIP"
+TWITTER_USER=USER_WITH_MEDIA_TO_USE
 ```
 
 `GIF_PLAYER_SSH_HOST` should be include your username for logging in, something like `pi@192.168.1.2`
+
+
+# TODO
+
+* Delete JS stuff
+* `ts-node src/twitter-watch.ts` 
+* Add instructions for ts-node
+* Add `ffmpeg` install details (https://johnvansickle.com/ffmpeg/) (/usr/bin)
+* Add node details
+* Fix build process
+* Write crontab script
+* Include / distinguish between this and the inotify 
