@@ -20,13 +20,13 @@ export class TwitterUtil {
 
     getMediaFromTweet(tweet: any): {type: string, url: string} {
         let mediaType = null;
-        mediaType = get(tweet, 'extended_entities.media[0].type');
+        mediaType = get(tweet, 'extended_entities.media[0].type') || get(tweet, 'retweeted_status.extended_entities.media[0].type');
         if (!mediaType) {
             throw new Error('No media found on this tweet, exiting...');
         }
 
         if (['video', 'animated_gif'].includes(mediaType)) {
-            let videoURL = get(tweet, 'extended_entities.media[0].video_info.variants[0].url');
+            let videoURL = get(tweet, 'extended_entities.media[0].video_info.variants[0].url') || get(tweet, 'retweeted_status.extended_entities.media[0].video_info.variants[0].url');
             if (!videoURL) {
                 throw new Error('Twitter specifies a video, but I couldnt find one, exiting...');
                 return;
