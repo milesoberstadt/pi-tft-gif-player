@@ -47,12 +47,12 @@ async function main() {
     const videoLength = await getVideoLength(origVidPath);
     if (videoLength < loopMinLength){
         await lengthenVideo(videoLength, loopMinLength, videoProcessingDir);
-        console.log('length done')
         await fs.promises.copyFile(longerVidPath, finalVidPath);
     }
     else {
         await fs.promises.copyFile(origVidPath, finalVidPath);
     }
+    await fs.writeFileSync(`${videoProcessingDir}/latest`, tweet.id_str);
     console.log('DONE');
 }
 
