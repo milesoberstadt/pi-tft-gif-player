@@ -10,7 +10,11 @@ This project is meant grab GIF media from Twitter, format it with ffmpeg and sen
 3. Issue `npm install` to get all the dependencies installed
 4. Setup your .env file
 5. Run this command with your tweet URL `node index.js TWEET_URL` (example `node index.js https://twitter.com/PhotoGhibli/status/1162280445666447362`)
-6. Add this to your crontab: `@reboot exec screen -d -m -S gif-player /bin/bash "/home/pi/pi-tft-gif-player/play_video_and_watch.sh"`
+6. Add this to your crontab: 
+```
+@reboot exec screen -d -m -S gif-player /bin/bash "/home/pi/pi-tft-gif-player/play_video_and_watch.sh"
+*/2 * * * * exec screen -d -m -S gif-player-twitter /bin/bash "/home/pi/pi-tft-gif-player/check_tweets.sh"
+```
 
 ## .env file
 
