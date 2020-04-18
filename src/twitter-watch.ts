@@ -45,6 +45,7 @@ async function main() {
     else {
         await fs.promises.copyFile(origVidPath, longerVidPath);
     }
+    fs.writeFileSync(`${videoProcessingDir}/latest`, tweet.id_str);
     console.log('DONE');
 }
 
