@@ -17,6 +17,7 @@ You can get the latest binary [here](https://johnvansickle.com/ffmpeg/), the `ff
 
 ```bash
 @reboot exec screen -d -m -S gif-player /bin/bash "/home/pi/pi-tft-gif-player/play_video_and_watch.sh"
+@reboot exec screen -d -m -S buttons sh -c "python3 /home/pi/pi-tft-gif-player/buttons.py"
 */2 * * * * exec screen -d -m -S gif-player-twitter /bin/bash "/home/pi/pi-tft-gif-player/check_tweets.sh"
 ```
 
